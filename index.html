@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Food Health Analyzer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- Icon sprite -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-search" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></g></symbol>
+  <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+  <symbol id="i-upload" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M7 9l5-5 5 5M4 20h16"/></g></symbol>
+</svg>
+
+<div class="app">
+
+  <header class="top">
+    <div class="logo">FOOD<span>/</span>HEALTH</div>
+    <nav class="nav" role="tablist" aria-label="Sections">
+      <button class="navbtn active" role="tab" aria-selected="true" data-view="search" type="button">Search</button>
+      <button class="navbtn" role="tab" aria-selected="false" data-view="photo" type="button">Photo</button>
+      <button class="navbtn" role="tab" aria-selected="false" data-view="compare" type="button">Compare</button>
+      <button class="navbtn" role="tab" aria-selected="false" data-view="today" type="button">Today</button>
+    </nav>
+    <div class="tools">
+      <div class="seg" role="group" aria-label="Serving unit">
+        <button type="button" data-unit="g" aria-pressed="true">g</button>
+        <button type="button" data-unit="oz" aria-pressed="false">oz</button>
+      </div>
+      <button class="seg-btn" id="themeBtn" type="button" aria-label="Switch to light theme">Light</button>
+    </div>
+  </header>
+
+  <div class="strip" aria-live="polite">
+    <b>Today</b>
+    <div class="track strip-track"><div id="stripBar"></div></div>
+    <span><b id="stripEaten">0</b> / <span id="stripGoal">2,000</span> kcal</span>
+    <span class="muted" id="stripLeft">2,000 left</span>
+  </div>
+
+  <main>
+
+    <!-- SEARCH -->
+    <section class="view active" id="view-search">
+      <div class="searchrow">
+        <label class="field" for="foodInput">
+          <svg class="i"><use href="#i-search"/></svg>
+          <input type="text" id="foodInput" placeholder="Search any food, like grilled salmon or mango" autocomplete="off">
+        </label>
+        <button class="btn" id="textBtn" type="button">Analyze</button>
+      </div>
+      <div class="chips" id="dietFilters" aria-label="Diet filters"></div>
+      <div class="status" id="textStatus" role="status"><span class="spin"></span><span id="textStatusText">Analyzing…</span><button class="cancel" id="textCancel" type="button">Cancel</button></div>
+      <div class="err" id="textErr" role="alert"><span id="textErrText"></span></div>
+    </section>
+
+    <!-- PHOTO -->
+    <section class="view" id="view-photo">
+      <div class="upload" id="uploadZone" role="button" tabindex="0" aria-label="Choose a food photo">
+        <svg class="i big"><use href="#i-upload"/></svg>
+        <h3>Drop a photo of your food or plate</h3>
+        <p>or click to browse. JPG, PNG, GIF or WebP, up to 5 MB.</p>
+        <input type="file" id="fileInput" accept="image/jpeg,image/png,image/gif,image/webp">
+      </div>
+      <div class="preview" id="previewWrap">
+        <img class="preview-img" id="previewImg" alt="Your food photo">
+        <div class="preview-actions">
+          <button class="btn" id="imageBtn" type="button">Analyze photo</button>
+          <button class="btn ghost" id="changeBtn" type="button">Change photo</button>
+          <button class="btn ghost danger" id="removeBtn" type="button">Remove</button>
+        </div>
+      </div>
+      <div class="status" id="imageStatus" role="status"><span class="spin"></span><span id="imageStatusText">Analyzing your photo…</span><button class="cancel" id="imageCancel" type="button">Cancel</button></div>
+      <div class="err" id="imageErr" role="alert"><span id="imageErrText"></span></div>
+      <div class="samples">
+        <span class="muted">No photo handy? Try a sample:</span>
+        <button class="chip" type="button" data-sample="apple">Apple</button>
+        <button class="chip" type="button" data-sample="friedchicken">Fried chicken</button>
+        <button class="chip" type="button" data-sample="pizza">Pizza</button>
+        <button class="chip" type="button" data-sample="salmon">Salmon</button>
+        <button class="chip" type="button" data-sample="broccoli">Broccoli</button>
+      </div>
+
+      <div class="panel plate" id="plate" hidden>
+        <h2 class="sec">Detected on your plate</h2>
+        <ul class="plate-list" id="plateList"></ul>
+        <div class="plate-total">
+          <div>
+            <div class="sec">Plate total</div>
+            <div class="plate-kcal"><span id="plateKcal">0</span><small>kcal</small></div>
+            <div class="muted" id="plateMacros"></div>
+          </div>
+          <div class="grade" id="plateGrade">–</div>
+        </div>
+        <button class="btn block" id="plateAdd" type="button">Add plate to today</button>
+      </div>
+    </section>
+
+    <!-- COMPARE -->
+    <section class="view" id="view-compare">
+      <div class="cmp-slots">
+        <div class="cmp-slot">
+          <label class="sec" for="cmpAInput">Food A</label>
+          <div class="searchrow">
+            <input class="plain" type="text" id="cmpAInput" placeholder="e.g. grilled salmon" autocomplete="off">
+            <button class="btn" id="cmpABtn" type="button">Analyze</button>
+          </div>
+          <div class="status" id="cmpAStatus" role="status"><span class="spin"></span><span id="cmpAStatusText">Analyzing…</span><button class="cancel" id="cmpACancel" type="button">Cancel</button></div>
+          <div class="err" id="cmpAErr" role="alert"><span id="cmpAErrText"></span></div>
+        </div>
+        <div class="cmp-slot">
+          <label class="sec" for="cmpBInput">Food B</label>
+          <div class="searchrow">
+            <input class="plain" type="text" id="cmpBInput" placeholder="e.g. fried chicken" autocomplete="off">
+            <button class="btn" id="cmpBBtn" type="button">Analyze</button>
+          </div>
+          <div class="status" id="cmpBStatus" role="status"><span class="spin"></span><span id="cmpBStatusText">Analyzing…</span><button class="cancel" id="cmpBCancel" type="button">Cancel</button></div>
+          <div class="err" id="cmpBErr" role="alert"><span id="cmpBErrText"></span></div>
+        </div>
+      </div>
+      <div id="cmpOut" class="cmp-out"></div>
+    </section>
+
+    <!-- TODAY -->
+    <section class="view" id="view-today">
+      <div class="today-grid">
+        <div class="col">
+          <div class="panel ring-card">
+            <svg width="150" height="150" viewBox="0 0 150 150" role="img" id="ringSvg" aria-label="Calories today">
+              <circle cx="75" cy="75" r="62" fill="none" class="ring-bg" stroke-width="14"/>
+              <circle id="ringArc" cx="75" cy="75" r="62" fill="none" class="ring-fg" stroke-width="14" stroke-linecap="round" stroke-dasharray="390" stroke-dashoffset="390" transform="rotate(-90 75 75)"/>
+              <text id="ringNum" x="75" y="78" text-anchor="middle" class="ring-num">0</text>
+              <text id="ringSub" x="75" y="100" text-anchor="middle" class="ring-sub">of 2,000 kcal</text>
+            </svg>
+            <div class="macro-goals" id="macroGoals"></div>
+          </div>
+          <div class="panel">
+            <div class="row-head"><h2 class="sec">Today's log</h2><button class="link" id="clearLog" type="button">Clear today</button></div>
+            <ul class="list" id="logList"></ul>
+          </div>
+        </div>
+        <div class="col">
+          <div class="panel"><h2 class="sec">Favorites</h2><div class="chips" id="favList"></div></div>
+          <div class="panel"><h2 class="sec">Recent</h2><ul class="list" id="histList"></ul></div>
+          <div class="panel">
+            <h2 class="sec">Goals and preferences</h2>
+            <label class="goal" for="goalInput">Daily calories <span><input type="number" id="goalInput" min="800" max="6000" step="50"> kcal</span></label>
+            <div class="sub-sec">Diet</div>
+            <div class="chips" id="dietPrefs"></div>
+            <div class="sub-sec">Allergens to flag</div>
+            <div class="chips" id="allergenPrefs"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- RESULT (shared by Search and Photo) -->
+    <section class="result" id="result" hidden>
+      <div class="result-grid">
+        <div class="panel main-card">
+          <div class="res-head">
+            <div>
+              <div class="cat" id="foodCat">Food</div>
+              <h2 class="food-name" id="foodName">Food</h2>
+            </div>
+            <button class="fav" id="favBtn" type="button" aria-pressed="false" aria-label="Save to favorites"><svg class="i"><use href="#i-star"/></svg></button>
+          </div>
+
+          <div class="tag-row" id="allergenRow"></div>
+          <div class="tag-row" id="fitRow"></div>
+          <div class="warn-banner" id="allergenWarn" hidden></div>
+
+          <div class="kcal"><span id="calVal">0</span><small>calories</small></div>
+
+          <div class="serving">
+            <label for="servingInput">Serving</label>
+            <div class="stepper">
+              <button type="button" id="servMinus" aria-label="Decrease serving">−</button>
+              <input type="number" id="servingInput" value="100" min="1" max="2000" step="1" aria-label="Serving size">
+              <span id="unitLbl">g</span>
+              <button type="button" id="servPlus" aria-label="Increase serving">+</button>
+            </div>
+          </div>
+
+          <div class="macro" aria-hidden="true"><div id="barP"></div><div id="barC"></div><div id="barF"></div></div>
+          <div class="legend">
+            <span><i class="dot p"></i> Protein <b id="gP">0 g</b> <span class="muted" id="pctP"></span></span>
+            <span><i class="dot c"></i> Carbs <b id="gC">0 g</b> <span class="muted" id="pctC"></span></span>
+            <span><i class="dot f"></i> Fat <b id="gF">0 g</b> <span class="muted" id="pctF"></span></span>
+          </div>
+
+          <h3 class="sec">Daily value</h3>
+          <div class="dv-grid" id="dvGrid"></div>
+
+          <div class="grid" id="nutrientGrid"></div>
+
+          <div class="actions">
+            <button class="btn grow" id="addBtn" type="button">Add to today</button>
+            <button class="btn ghost" id="compareBtn" type="button">Compare</button>
+          </div>
+        </div>
+
+        <div class="col">
+          <div class="panel score-card">
+            <div class="grade" id="gradeBadge">–</div>
+            <div class="score-body">
+              <div class="sec">Score <b id="scoreNum">0</b> / 100</div>
+              <div class="break" id="breakdown"></div>
+            </div>
+          </div>
+          <div class="insight"><b>Insight.</b> <span id="insightText">–</span></div>
+          <div class="panel" id="swapsCard" hidden>
+            <h3 class="sec">Healthier swaps</h3>
+            <ul class="list" id="swapsList"></ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="empty" id="emptyState">
+      <p>Search a food or add a photo to see its nutrition and health score.</p>
+    </div>
+
+  </main>
+
+  <footer class="foot">Nutrition values are estimates per 100 g, scaled to your serving. Not medical advice.</footer>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
